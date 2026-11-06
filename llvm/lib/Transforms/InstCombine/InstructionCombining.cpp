@@ -4897,20 +4897,18 @@ Instruction *InstCombinerImpl::visitBitInsertInst(BitInsertInst &BI) {
 
 /// bitextract ty, (bitcast x to bM), off
 ///   -> extractelement (bitcast x to <M/W x ty>), off/W
-/// where ty is W bits wide, if x is a vector and W divides M and off.
+/// bitextract <N x ty>, (bitcast x to <N x bM>), <off0, off1, ...>
+///   -> shufflevector (bitcast x to <N*M/W x ty>), <off0/W, M/W + off1/W, ...>
+/// where ty is W bits wide, if x is a vector and W divides M and the offsets.
 static Instruction *foldBitExtractBitCast(BitExtractInst &BE,
                                           InstCombinerImpl &IC) {
   Value *X;
-  uint64_t Off;
-  if (!match(&BE, m_BitExtract(m_BitCast(m_Value(X)), m_ConstantInt(Off))))
-    return nullptr;
-
-  // TODO: Fold vector bitextracts.
-  if (BE.getType()->isVectorTy())
+  Constant *Off;
+  if (!match(&BE, m_BitExtract(m_BitCast(m_Value(X)), m_Constant(Off))))
     return nullptr;
 
   Type *SrcTy = X->getType();
-  Type *EltTy = BE.getType();
+  Type *EltTy = BE.getType()->getScalarType();
   if (!isa<FixedVectorType>(SrcTy))
     return nullptr;
 
@@ -4926,27 +4924,36 @@ static Instruction *foldBitExtractBitCast(BitExtractInst &BE,
 
   // If the only user is a bitcast to a vector, leave the pair to
   // foldBitCastBitExtract, which turns it into a single shufflevector. Folding
-  // the bitextract first would produce an extractelement whose bitcast to a
-  // vector cannot be turned into a shufflevector.
+  // the bitextract first would produce an extractelement or shufflevector
+  // whose bitcast to a vector cannot be turned into a shufflevector.
   if (BE.hasOneUse() && isa<BitCastInst>(BE.user_back()) &&
       BE.user_back()->getType()->isVectorTy())
     return nullptr;
 
+  unsigned NumElts = 1;
+  if (auto *VTy = dyn_cast<VectorType>(BE.getType())) {
+    if (!isa<FixedVectorType>(VTy))
+      return nullptr;
+    NumElts = cast<FixedVectorType>(VTy)->getNumElements();
+  }
+
   const DataLayout &DL = IC.getDataLayout();
-  uint64_t SrcBits = DL.getTypeSizeInBits(SrcTy);
+  uint64_t SrcBits =
+      DL.getTypeSizeInBits(BE.getOperand(0)->getType()->getScalarType());
   uint64_t EltBits = DL.getTypeSizeInBits(EltTy);
-  if (SrcBits % EltBits != 0 || Off % EltBits != 0)
+  SmallVector<int, 16> Mask;
+  if (!getBitExtractShuffleMask(Off, NumElts, SrcBits, EltBits, EltBits,
+                                DL.isBigEndian(), Mask))
     return nullptr;
 
-  assert(Off + EltBits <= SrcBits &&
-         "Expected out of range offset to simplify to poison");
-  uint64_t NumElts = SrcBits / EltBits;
-  auto *VecTy = FixedVectorType::get(EltTy, NumElts);
-  uint64_t Idx = Off / EltBits;
-  if (DL.isBigEndian())
-    Idx = NumElts - 1 - Idx;
+  auto *VecTy = FixedVectorType::get(EltTy, NumElts * SrcBits / EltBits);
   Value *Vec = IC.Builder.CreateBitCast(X, VecTy);
-  return ExtractElementInst::Create(Vec, IC.Builder.getInt64(Idx));
+  if (BE.getType()->isVectorTy())
+    return new ShuffleVectorInst(Vec, Mask);
+
+  assert(Mask[0] != PoisonMaskElem &&
+         "Expected out of range offset to simplify to poison");
+  return ExtractElementInst::Create(Vec, IC.Builder.getInt64(Mask[0]));
 }
 
 Instruction *InstCombinerImpl::visitBitExtractInst(BitExtractInst &BE) {

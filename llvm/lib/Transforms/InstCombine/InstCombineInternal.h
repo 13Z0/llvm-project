@@ -64,6 +64,17 @@ class User;
 ///           or represents lshr handling for right shifts
 enum class ShiftSemantics { Lossy, Signed, Unsigned };
 
+/// Builds the mask of a shufflevector of (bitcast x to <K x ty>) that reads
+/// the bits of bitextract tB, (bitcast x to bS), Off, where S is \p SrcBits, B
+/// is \p Bits and ty is \p EltBits (W) wide. A vector bitextract reads one
+/// range per element, at the offset of that element in \p Off, so \p Off has
+/// \p NumElts offsets. Each range becomes B/W mask elements. A poison, undef
+/// or out-of-range offset makes its mask elements poison. Returns false if W
+/// does not divide S, B and every other offset.
+bool getBitExtractShuffleMask(Constant *Off, unsigned NumElts, uint64_t SrcBits,
+                              uint64_t Bits, uint64_t EltBits, bool IsBigEndian,
+                              SmallVectorImpl<int> &Mask);
+
 class LLVM_LIBRARY_VISIBILITY InstCombinerImpl final
     : public InstCombiner,
       public InstVisitor<InstCombinerImpl, Instruction *> {

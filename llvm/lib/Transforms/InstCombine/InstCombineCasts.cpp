@@ -18,7 +18,6 @@
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/Analysis/VectorUtils.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/Instruction.h"
@@ -3491,9 +3490,44 @@ static Value *foldCopySignIdioms(BitCastInst &CI,
   return Builder.CreateCopySign(Builder.CreateBitCast(Y, FTy), X);
 }
 
+bool llvm::getBitExtractShuffleMask(Constant *Off, unsigned NumElts,
+                                    uint64_t SrcBits, uint64_t Bits,
+                                    uint64_t EltBits, bool IsBigEndian,
+                                    SmallVectorImpl<int> &Mask) {
+  if (SrcBits % EltBits != 0 || Bits % EltBits != 0)
+    return false;
+
+  uint64_t EltsPerSrc = SrcBits / EltBits;
+  uint64_t EltsPerRange = Bits / EltBits;
+  for (unsigned I = 0; I != NumElts; ++I) {
+    Constant *EltOff =
+        Off->getType()->isVectorTy() ? Off->getAggregateElement(I) : Off;
+    if (!EltOff)
+      return false;
+
+    // A poison, undef or out of range offset is poison.
+    auto *CI = dyn_cast<ConstantInt>(EltOff);
+    if (isa<UndefValue>(EltOff) || (CI && CI->getValue().ugt(SrcBits - Bits))) {
+      Mask.append(EltsPerRange, PoisonMaskElem);
+      continue;
+    }
+
+    if (!CI || CI->getZExtValue() % EltBits != 0)
+      return false;
+    uint64_t First = CI->getZExtValue() / EltBits;
+    if (IsBigEndian)
+      First = EltsPerSrc - EltsPerRange - First;
+    for (uint64_t J = 0; J != EltsPerRange; ++J)
+      Mask.push_back(I * EltsPerSrc + First + J);
+  }
+  return true;
+}
+
 /// bitcast (bitextract tK, (bitcast x to bM), off) to <L x ty>
 ///   -> shufflevector (bitcast x to <M/W x ty>), <off/W, ..., off/W + L - 1>
-/// where ty is W bits wide, if x is a vector and W divides M and off.
+/// where ty is W bits wide, if x is a vector and W divides M, K and off.
+/// A vector bitextract reads one range per element, so the mask concatenates
+/// the ranges of every element.
 static Instruction *foldBitCastBitExtract(BitCastInst &BitCast,
                                           InstCombinerImpl &IC) {
   auto *DestTy = dyn_cast<FixedVectorType>(BitCast.getType());
@@ -3501,15 +3535,11 @@ static Instruction *foldBitCastBitExtract(BitCastInst &BitCast,
     return nullptr;
 
   // A bitextract with more than one use is ignored so foldBitExtractBitCast
-  // turns it into an extractelement instead.
+  // turns it into an extractelement or shufflevector instead.
   Value *X;
-  uint64_t Off;
+  Constant *Off;
   if (!match(BitCast.getOperand(0),
-             m_OneUse(m_BitExtract(m_BitCast(m_Value(X)), m_ConstantInt(Off)))))
-    return nullptr;
-
-  // TODO: Fold vector bitextracts.
-  if (BitCast.getOperand(0)->getType()->isVectorTy())
+             m_OneUse(m_BitExtract(m_BitCast(m_Value(X)), m_Constant(Off)))))
     return nullptr;
 
   Type *SrcTy = X->getType();
@@ -3527,24 +3557,32 @@ static Instruction *foldBitCastBitExtract(BitCastInst &BitCast,
   if (SrcEltTy->isPointerTy() && EltTy->isPointerTy() && SrcEltTy != EltTy)
     return nullptr;
 
+  auto *BE = cast<BitExtractInst>(BitCast.getOperand(0));
+  Type *ExtractTy = BE->getType();
+  Type *ExtractSrcTy = BE->getOperand(0)->getType();
+  unsigned NumElts = 1;
+  if (auto *VTy = dyn_cast<VectorType>(ExtractTy)) {
+    if (!isa<FixedVectorType>(VTy))
+      return nullptr;
+    NumElts = cast<FixedVectorType>(VTy)->getNumElements();
+  }
+
   const DataLayout &DL = IC.getDataLayout();
-  uint64_t SrcBits = DL.getTypeSizeInBits(SrcTy);
+  uint64_t SrcBits = DL.getTypeSizeInBits(ExtractSrcTy->getScalarType());
+  uint64_t Bits = DL.getTypeSizeInBits(ExtractTy->getScalarType());
   uint64_t EltBits = DL.getTypeSizeInBits(EltTy);
-  if (SrcBits % EltBits != 0 || Off % EltBits != 0)
+  SmallVector<int, 16> Mask;
+  if (!getBitExtractShuffleMask(Off, NumElts, SrcBits, Bits, EltBits,
+                                DL.isBigEndian(), Mask))
     return nullptr;
 
-  // An out of range offset is poison.
-  uint64_t NumElts = SrcBits / EltBits;
-  uint64_t NumLanes = DestTy->getNumElements();
-  uint64_t First = Off / EltBits;
-  if (First + NumLanes > NumElts)
+  // An out of range offset is poison, and is simplified on its own.
+  if (!ExtractTy->isVectorTy() && Mask[0] == PoisonMaskElem)
     return nullptr;
 
-  auto *VecTy = FixedVectorType::get(EltTy, NumElts);
-  if (DL.isBigEndian())
-    First = NumElts - NumLanes - First;
+  auto *VecTy = FixedVectorType::get(EltTy, NumElts * SrcBits / EltBits);
   Value *Vec = IC.Builder.CreateBitCast(X, VecTy);
-  return new ShuffleVectorInst(Vec, createSequentialMask(First, NumLanes, 0));
+  return new ShuffleVectorInst(Vec, Mask);
 }
 
 Instruction *InstCombinerImpl::visitBitCast(BitCastInst &CI) {
