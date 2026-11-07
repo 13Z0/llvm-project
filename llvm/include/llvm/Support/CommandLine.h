@@ -50,6 +50,7 @@ class Error;
 /// It is intentionally a short name to make qualified usage concise.
 namespace cl {
 
+class LibraryOptions;
 class LibraryOptionsContext;
 
 //===----------------------------------------------------------------------===//
@@ -75,6 +76,18 @@ LLVM_ABI bool ParseCommandLineOptions(int argc, const char *const *argv,
 // Like ParseCommandLineOptions, but sets per-context libraries' options in
 // Context instead of their global().
 LLVM_ABI bool parseCommandLineOptions(LibraryOptionsContext &Context,
+                                      ArrayRef<const char *> Args,
+                                      StringRef Overview = "",
+                                      raw_ostream *Errs = nullptr,
+                                      vfs::FileSystem *VFS = nullptr,
+                                      const char *EnvVar = nullptr);
+
+// Like the above, but also accepts the options of ToolOptions, libraries that a
+// tool opts in to rather than registering with addLibraryOptions. Context (for
+// assign) and the parser (until its next parse or ResetCommandLineParser) keep
+// pointers to them.
+LLVM_ABI bool parseCommandLineOptions(LibraryOptionsContext &Context,
+                                      ArrayRef<LibraryOptions *> ToolOptions,
                                       ArrayRef<const char *> Args,
                                       StringRef Overview = "",
                                       raw_ostream *Errs = nullptr,
