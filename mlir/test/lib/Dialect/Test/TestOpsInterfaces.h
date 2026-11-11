@@ -14,7 +14,6 @@
 #include "mlir/Dialect/LLVMIR/NVVMRequiresSMTraits.h"
 #include "mlir/Interfaces/DataLayoutInterfaces.h"
 #include "mlir/Interfaces/DestinationStyleOpInterface.h"
-#include "mlir/Interfaces/MemorySlotInterfaces.h"
 #include "mlir/Interfaces/TilingInterface.h"
 
 namespace test {
