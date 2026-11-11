@@ -28,6 +28,7 @@
 #include "SyntheticSections.h"
 #include "Target.h"
 #include "lld/Common/Strings.h"
+#include "lld/Common/Utils.h"
 #include "llvm/ADT/DenseMapInfoVariant.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/Parallel.h"
@@ -528,10 +529,9 @@ static void processSectionEdges(
         }
         if (auto *ms = dyn_cast<MergeInputSection>(relSec)) {
           auto &piece = ms->getSectionPiece(offset);
-          auto *word =
-              reinterpret_cast<std::atomic<uint32_t> *>(&piece.inputOff + 1);
+          auto &word = utils::atomicRef(*(&piece.inputOff + 1));
           constexpr uint32_t liveBit = sys::IsBigEndianHost ? (1U << 31) : 1U;
-          word->fetch_or(liveBit, std::memory_order_relaxed);
+          word.fetch_or(liveBit, std::memory_order_relaxed);
         }
         fn(relSec, offset);
       }
@@ -565,8 +565,7 @@ void MarkLive<ELFT, TrackWhyLive>::markParallel() {
     processSectionEdges<ELFT>(
         ctx, sec, cNamedSections,
         [&](InputSectionBase *target, uint64_t offset) {
-          auto &part =
-              reinterpret_cast<std::atomic<uint8_t> &>(target->partition);
+          auto &part = utils::atomicRef(target->partition);
           // Optimistic load-then-exchange avoids expensive atomic
           // RMW on already-visited sections.
           if (part.load(std::memory_order_relaxed) != 0 ||
