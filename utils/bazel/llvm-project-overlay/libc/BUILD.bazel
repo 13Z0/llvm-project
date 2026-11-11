@@ -1972,8 +1972,8 @@ libc_support_library(
     ] + select({
         ":full_build": [
             ":__support_integer_to_string",
-            ":__support_osutil_exit_hdrs",
-            ":__support_osutil_io",
+            "//libc/src/__support/OSUtil:exit_hdrs",
+            "//libc/src/__support/OSUtil:io",
         ],
         "//conditions:default": [],
     }),
@@ -2261,235 +2261,6 @@ alias(
 )
 
 libc_support_library(
-    name = "__support_osutil_syscall",
-    hdrs = ["src/__support/OSUtil/syscall.h"],
-    textual_hdrs = select({
-        "@platforms//os:linux": [
-            "src/__support/OSUtil/linux/syscall.h",
-            "src/__support/OSUtil/linux/aarch64/syscall.h",
-            "src/__support/OSUtil/linux/x86_64/syscall.h",
-            "src/__support/OSUtil/linux/riscv/syscall.h",
-        ],
-        "@platforms//os:macos": [
-            "src/__support/OSUtil/darwin/syscall.h",
-            "src/__support/OSUtil/darwin/aarch64/syscall.h",
-        ],
-        "@platforms//os:windows": [],
-    }),
-    deps = [
-        ":__support_common",
-        ":__support_error_or",
-        "//libc/src/__support/CPP:bit",
-        "//libc/src/__support/macros:config",
-        "//libc/src/__support/macros:optimization",
-        "//libc/src/__support/macros:sanitizer",
-        "//libc/src/__support/macros/properties:architectures",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_linux_auxv",
-    hdrs = ["src/__support/OSUtil/linux/auxv.h"],
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":__support_common",
-        ":__support_osutil_syscall",
-        ":__support_threads_callonce",
-        ":hdr_errno_macros",
-        ":hdr_fcntl_macros",
-        ":hdr_sys_auxv_macros",
-        ":hdr_sys_mman_macros",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:close",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:mmap",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:munmap",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:open",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:read",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_linux_sysinfo",
-    hdrs = ["src/__support/OSUtil/linux/sysinfo.h"],
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":__support_common",
-        ":__support_ctype_utils",
-        ":__support_error_or",
-        ":hdr_errno_macros",
-        "//libc/src/__support/CPP:array",
-        "//libc/src/__support/CPP:bit",
-        "//libc/src/__support/CPP:optional",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:close",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:open",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:read",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:sched_getaffinity",
-        "//libc/src/__support/macros:config",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_vdso",
-    srcs = ["src/__support/OSUtil/linux/vdso.cpp"],
-    hdrs = [
-        "src/__support/OSUtil/linux/vdso.h",
-        "src/__support/OSUtil/linux/vdso_sym.h",
-    ],
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    textual_hdrs = [
-        "src/__support/OSUtil/linux/riscv/vdso.h",
-        "src/__support/OSUtil/linux/arm/vdso.h",
-        "src/__support/OSUtil/linux/x86_64/vdso.h",
-        "src/__support/OSUtil/linux/aarch64/vdso.h",
-    ],
-    deps = [
-        ":__support_common",
-        ":__support_osutil_linux_auxv",
-        ":__support_threads_callonce",
-        ":__support_threads_linux_futex_word_type",
-        ":hdr_elf_proxy",
-        ":hdr_link_macros",
-        ":hdr_sys_auxv_macros",
-        ":types_clock_t",
-        ":types_clockid_t",
-        ":types_struct_timespec",
-        ":types_struct_timeval",
-        ":types_time_t",
-        "//libc/src/__support/CPP:array",
-        "//libc/src/__support/CPP:optional",
-        "//libc/src/__support/CPP:string_view",
-        "//libc/src/__support/macros:attributes",
-        "//libc/src/__support/macros/properties:architectures",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_io",
-    hdrs = ["src/__support/OSUtil/io.h"],
-    textual_hdrs = select({
-        "@platforms//os:linux": ["src/__support/OSUtil/linux/io.h"],
-        "@platforms//os:macos": ["src/__support/OSUtil/darwin/io.h"],
-        "@platforms//os:windows": ["src/__support/OSUtil/windows/io.h"],
-    }),
-    deps = [
-        ":__support_common",
-        ":__support_osutil_syscall",
-        ":string_utils",
-        "//libc/src/__support/CPP:string_view",
-        "//libc/src/__support/macros:config",
-        "//libc/src/__support/macros/properties:architectures",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_exit_hdrs",
-    hdrs = ["src/__support/OSUtil/exit.h"],
-    deps = [
-        ":__support_common",
-        "//libc/src/__support/macros:config",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_exit",
-    srcs = ["src/__support/OSUtil/linux/exit.cpp"],
-    hdrs = ["src/__support/OSUtil/exit.h"],
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":__support_common",
-        ":__support_osutil_exit_hdrs",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:exit_group",
-        "//libc/src/__support/macros:config",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_linux_stat_kernel_statx_types",
-    hdrs = ["src/__support/OSUtil/linux/stat/kernel_statx_types.h"],
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":hdr_stdint_proxy",
-        "//libc/src/__support/macros:config",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_linux_stat_stat_via_statx",
-    hdrs = ["src/__support/OSUtil/linux/stat/stat_via_statx.h"],
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":__support_common",
-        ":__support_error_or",
-        ":__support_osutil_linux_stat_kernel_statx_types",
-        ":hdr_stdint_proxy",
-        ":types_struct_stat",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:statx",
-        "//libc/src/__support/macros:config",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_linux_path",
-    hdrs = ["src/__support/OSUtil/linux/path.h"],
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        "//libc/src/__support/CPP:string_view",
-        "//libc/src/__support/macros:config",
-    ],
-)
-
-libc_support_library(
-    name = "__support_osutil_path",
-    hdrs = ["src/__support/OSUtil/path.h"],
-    deps = select({
-        "@platforms//os:linux": [
-            ":__support_osutil_linux_path",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-libc_support_library(
-    name = "__support_osutil_linux_sigmask",
-    hdrs = ["src/__support/OSUtil/linux/sigmask.h"],
-    full_build_only = True,
-    target_compatible_with = select({
-        "@platforms//os:linux": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":__support_common",
-        ":__support_error_or",
-        ":hdr_errno_macros",
-        ":hdr_signal_macros",
-        ":types_sigset_t",
-        ":types_size_t",
-        "//libc/src/__support/OSUtil/linux/syscall_wrappers:rt_sigprocmask",
-        "//libc/src/__support/macros:config",
-    ],
-)
-
-libc_support_library(
     name = "__support_stringutil",
     srcs = glob(["src/__support/StringUtil/tables/**/*.h"]) + [
         "src/__support/StringUtil/error_to_string.cpp",
@@ -2543,8 +2314,8 @@ libc_support_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":__support_osutil_syscall",
         ":hdr_stdint_proxy",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -2588,13 +2359,13 @@ libc_support_library(
     }),
     deps = [
         ":__support_error_or",
-        ":__support_osutil_syscall",
         ":__support_threads_linux_futex_word_type",
         ":__support_time",
         ":types_struct_timespec",
         "//libc/src/__support/CPP:atomic",
         "//libc/src/__support/CPP:limits",
         "//libc/src/__support/CPP:optional",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:attributes",
         "//libc/src/__support/macros:config",
     ],
@@ -2613,8 +2384,8 @@ libc_support_library(
     name = "__support_threads_identifier",
     hdrs = ["src/__support/threads/identifier.h"],
     deps = [
-        ":__support_osutil_syscall",
         ":types_pid_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:optimization",
     ] + select({
         ":full_build": [
@@ -2797,8 +2568,6 @@ libc_support_library(
         ":__support_common",
         ":__support_error_or",
         ":__support_fixedvector",
-        ":__support_osutil_linux_sigmask",
-        ":__support_osutil_syscall",
         ":__support_threads_futex_utils",
         ":__support_threads_linux_futex_utils",
         ":__support_threads_linux_futex_word_type",
@@ -2818,6 +2587,8 @@ libc_support_library(
         "//libc/src/__support/CPP:optional",
         "//libc/src/__support/CPP:string_view",
         "//libc/src/__support/CPP:stringstream",
+        "//libc/src/__support/OSUtil:linux_sigmask",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:clone",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:close",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:exit",
@@ -2858,11 +2629,11 @@ libc_support_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":__support_osutil_syscall",
         ":__support_threads_tcb",
         ":config_app_h",
         ":hdr_sys_mman_macros",
         ":string_memory_utils",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:exit",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:getrandom",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:mmap",
@@ -2941,9 +2712,9 @@ libc_support_library(
     deps = [
         ":__support_common",
         ":__support_error_or",
-        ":__support_osutil_vdso",
         ":types_clockid_t",
         ":types_struct_timespec",
+        "//libc/src/__support/OSUtil:vdso",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:clock_gettime",
         "//libc/src/__support/macros:config",
     ],
@@ -7731,7 +7502,7 @@ libc_function(
     full_build_only = True,
     deps = [
         ":__support_common",
-        ":__support_osutil_exit",
+        "//libc/src/__support/OSUtil:exit",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -7759,9 +7530,9 @@ libc_function(
     full_build_only = True,
     deps = [
         ":__support_common",
-        ":__support_osutil_exit",
         ":__support_threads_thread_headers",
         ":fflush_internal",
+        "//libc/src/__support/OSUtil:exit",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -7923,9 +7694,9 @@ libc_support_library(
     deps = [
         ":__signal_utils",
         ":__support_common",
-        ":__support_osutil_exit",
-        ":__support_osutil_linux_sigmask",
         ":types_struct_sigaction",
+        "//libc/src/__support/OSUtil:exit",
+        "//libc/src/__support/OSUtil:linux_sigmask",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:raise",
         "//libc/src/__support/macros:config",
     ],
@@ -7978,9 +7749,9 @@ libc_support_library(
     srcs = ["src/compiler/generic/__stack_chk_fail.cpp"],
     hdrs = ["src/compiler/__stack_chk_fail.h"],
     deps = [
-        ":__support_osutil_io",
         ":hdr_stdint_proxy",
         ":stdlib_abort_utils",
+        "//libc/src/__support/OSUtil:io",
     ],
 )
 
@@ -8063,8 +7834,6 @@ libc_function(
         ":__support_common",
         ":__support_error_or",
         ":__support_libc_errno",
-        ":__support_osutil_linux_stat_kernel_statx_types",
-        ":__support_osutil_path",
         ":hdr_errno_macros",
         ":hdr_fcntl_macros",
         ":hdr_limits_macros",
@@ -8075,6 +7844,8 @@ libc_function(
         "//libc/src/__support/CPP:optional",
         "//libc/src/__support/CPP:string",
         "//libc/src/__support/CPP:string_view",
+        "//libc/src/__support/OSUtil:linux_stat_kernel_statx_types",
+        "//libc/src/__support/OSUtil:path",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:getcwd",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:readlink",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:statx",
@@ -8918,9 +8689,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:open",
         "//libc/src/__support/macros:config",
     ],
@@ -8952,9 +8723,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:access",
         "//libc/src/__support/macros:config",
     ],
@@ -8967,8 +8738,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:chdir",
         "//libc/src/__support/macros:config",
     ],
@@ -8994,9 +8765,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_unistd_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:dup",
         "//libc/src/__support/macros:config",
     ],
@@ -9009,10 +8780,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
         ":hdr_unistd_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:dup2",
         "//libc/src/__support/macros:config",
     ],
@@ -9029,9 +8800,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_unistd_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:dup3",
         "//libc/src/__support/macros:config",
     ],
@@ -9043,7 +8814,7 @@ libc_function(
     hdrs = ["src/unistd/environ.h"],
     deps = [
         ":__support_common",
-        ":__support_osutil_syscall",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9055,8 +8826,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:fchdir",
         "//libc/src/__support/macros:config",
     ],
@@ -9225,8 +8996,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:fsync",
         "//libc/src/__support/macros:config",
     ],
@@ -9239,11 +9010,11 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_stdint_proxy",
         ":hdr_unistd_macros",
         ":types_off_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:ftruncate",
         "//libc/src/__support/macros:config",
     ],
@@ -9272,10 +9043,10 @@ libc_function(
     hdrs = ["src/unistd/geteuid.h"],
     deps = [
         ":__support_common",
-        ":__support_osutil_syscall",
         ":hdr_unistd_macros",
         ":types_size_t",
         ":types_uid_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9306,7 +9077,7 @@ libc_function(
     hdrs = ["src/unistd/getpagesize.h"],
     deps = [
         ":__support_common",
-        ":__support_osutil_linux_auxv",
+        "//libc/src/__support/OSUtil:linux_auxv",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9349,7 +9120,6 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":__support_threads_fork_callbacks",
         ":__support_threads_identifier",
         ":__support_threads_thread",
@@ -9358,6 +9128,7 @@ libc_function(
         ":hdr_signal_macros",
         ":hdr_unistd_macros",
         ":types_pid_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9385,7 +9156,7 @@ libc_support_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":__support_osutil_syscall",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9404,15 +9175,15 @@ libc_support_library(
         ":__restore_rt",
         ":__support_common",
         ":__support_error_or",
-        ":__support_osutil_linux_sigmask",
-        ":__support_osutil_syscall",
-        ":__support_osutil_vdso",
         ":__support_threads_raw_rwlock",
         ":hdr_signal_macros",
         ":types_siginfo_t",
         ":types_sigset_t",
         ":types_size_t",
         ":types_struct_sigaction",
+        "//libc/src/__support/OSUtil:linux_sigmask",
+        "//libc/src/__support/OSUtil:syscall",
+        "//libc/src/__support/OSUtil:vdso",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9556,10 +9327,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_unistd_macros",
         ":sys_ioctl_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:ioctl",
         "//libc/src/__support/macros:config",
     ],
@@ -9572,10 +9343,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
         ":hdr_unistd_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:link",
         "//libc/src/__support/macros:config",
     ],
@@ -9615,10 +9386,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_unistd_macros",
         ":types_off_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:lseek",
         "//libc/src/__support/macros:config",
     ],
@@ -9691,12 +9462,12 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
         ":hdr_unistd_macros",
         ":types_size_t",
         ":types_ssize_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:readlink",
         "//libc/src/__support/macros:config",
     ],
@@ -9709,12 +9480,12 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
         ":hdr_unistd_macros",
         ":types_size_t",
         ":types_ssize_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:readlinkat",
         "//libc/src/__support/macros:config",
     ],
@@ -9727,9 +9498,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:rmdir",
         "//libc/src/__support/macros:config",
     ],
@@ -9802,9 +9573,9 @@ libc_function(
     hdrs = ["src/unistd/swab.h"],
     deps = [
         ":__support_common",
-        ":__support_osutil_syscall",
         ":hdr_unistd_macros",
         ":types_ssize_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9816,11 +9587,11 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_stdint_proxy",
         ":hdr_unistd_macros",
         ":types_off_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -9832,9 +9603,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:unlink",
         "//libc/src/__support/macros:config",
     ],
@@ -9847,9 +9618,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:unlinkat",
         "//libc/src/__support/macros:config",
     ],
@@ -9868,8 +9639,6 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_linux_auxv",
-        ":__support_osutil_linux_sysinfo",
         ":errno",
         ":hdr_limits_macros",
         ":hdr_sys_auxv_macros",
@@ -9877,6 +9646,8 @@ libc_function(
         ":hdr_unistd_macros",
         ":types_struct_rlimit",
         ":types_struct_sysinfo",
+        "//libc/src/__support/OSUtil:linux_auxv",
+        "//libc/src/__support/OSUtil:linux_sysinfo",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:prlimit",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:sysinfo",
         "//libc/src/__support/macros:config",
@@ -10436,10 +10207,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
         ":llvm_libc_macros_fcntl_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:rename",
         "//libc/src/__support/macros:config",
     ],
@@ -10468,10 +10239,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10483,10 +10254,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10498,10 +10269,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10513,9 +10284,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10527,11 +10298,11 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_off_t",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:mmap",
         "//libc/src/__support/macros:config",
     ],
@@ -10545,10 +10316,10 @@ libc_function(
         ":__support_common",
         ":__support_error_or",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:mprotect",
         "//libc/src/__support/macros:config",
     ],
@@ -10576,10 +10347,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10591,10 +10362,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10606,9 +10377,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10620,10 +10391,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_sys_mman_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:munmap",
         "//libc/src/__support/macros:config",
     ],
@@ -10675,9 +10446,9 @@ libc_function(
         ":__support_common",
         ":__support_error_or",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":pkey_common",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
         "//libc/src/__support/macros/properties:architectures",
     ],
@@ -10691,10 +10462,10 @@ libc_function(
         ":__support_common",
         ":__support_error_or",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_errno_macros",
         ":types_size_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:mprotect",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:pkey_mprotect",
         "//libc/src/__support/macros:config",
@@ -10709,9 +10480,9 @@ libc_function(
         ":__support_common",
         ":__support_error_or",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":pkey_common",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:attributes",
         "//libc/src/__support/macros:config",
     ],
@@ -10836,8 +10607,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/macros:config",
     ],
 )
@@ -10851,9 +10622,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_struct_rlimit",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:prlimit",
         "//libc/src/__support/macros:config",
     ],
@@ -10866,9 +10637,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_struct_rlimit",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:prlimit",
         "//libc/src/__support/macros:config",
     ],
@@ -10966,10 +10737,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":hdr_fcntl_macros",
         ":types_mode_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:mkdir",
         "//libc/src/__support/macros:config",
     ],
@@ -10982,9 +10753,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_mode_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:mkdirat",
         "//libc/src/__support/macros:config",
     ],
@@ -10999,10 +10770,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:accept",
         "//libc/src/__support/macros:config",
     ],
@@ -11015,10 +10786,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:accept4",
         "//libc/src/__support/macros:config",
     ],
@@ -11031,10 +10802,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:bind",
         "//libc/src/__support/macros:config",
     ],
@@ -11047,10 +10818,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:connect",
         "//libc/src/__support/macros:config",
     ],
@@ -11063,10 +10834,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:getpeername",
         "//libc/src/__support/macros:config",
     ],
@@ -11079,10 +10850,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:getsockname",
         "//libc/src/__support/macros:config",
     ],
@@ -11095,9 +10866,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:getsockopt",
         "//libc/src/__support/macros:config",
     ],
@@ -11110,8 +10881,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:listen",
         "//libc/src/__support/macros:config",
     ],
@@ -11124,12 +10895,12 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_size_t",
         ":types_socklen_t",
         ":types_ssize_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:recvfrom",
         "//libc/src/__support/macros:config",
         "//libc/src/__support/macros:sanitizer",
@@ -11143,11 +10914,11 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_ssize_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:recvfrom",
         "//libc/src/__support/macros:config",
         "//libc/src/__support/macros:sanitizer",
@@ -11161,10 +10932,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_struct_mmsghdr",
         ":types_struct_timespec",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:recvmmsg",
         "//libc/src/__support/macros:config",
     ],
@@ -11177,10 +10948,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_ssize_t",
         ":types_struct_msghdr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:recvmsg",
         "//libc/src/__support/macros:config",
         "//libc/src/__support/macros:sanitizer",
@@ -11194,12 +10965,12 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_size_t",
         ":types_socklen_t",
         ":types_ssize_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:sendto",
         "//libc/src/__support/macros:config",
     ],
@@ -11212,9 +10983,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_struct_mmsghdr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:sendmmsg",
         "//libc/src/__support/macros:config",
     ],
@@ -11227,10 +10998,10 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_ssize_t",
         ":types_struct_msghdr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:sendmsg",
         "//libc/src/__support/macros:config",
     ],
@@ -11243,11 +11014,11 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
         ":types_ssize_t",
         ":types_struct_sockaddr",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:sendto",
         "//libc/src/__support/macros:config",
     ],
@@ -11260,9 +11031,9 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
         ":types_socklen_t",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:setsockopt",
         "//libc/src/__support/macros:config",
     ],
@@ -11275,8 +11046,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:shutdown",
         "//libc/src/__support/macros:config",
     ],
@@ -11302,8 +11073,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:socket",
         "//libc/src/__support/macros:config",
     ],
@@ -11316,8 +11087,8 @@ libc_function(
     deps = [
         ":__support_common",
         ":__support_libc_errno",
-        ":__support_osutil_syscall",
         ":errno",
+        "//libc/src/__support/OSUtil:syscall",
         "//libc/src/__support/OSUtil/linux/syscall_wrappers:socketpair",
         "//libc/src/__support/macros:config",
         "//libc/src/__support/macros:sanitizer",
