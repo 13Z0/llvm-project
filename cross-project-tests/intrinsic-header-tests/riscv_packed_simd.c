@@ -5844,7 +5844,7 @@ int16x4_t test_pset_i16_i16x4(int16x4_t v, int16_t e) {
 }
 
 // CHECK-LABEL: test_pset_u16_u16x4:
-// RV32:         pack
+// RV32:         ppaireo.h
 // RV64:         mvm
 uint16x4_t test_pset_u16_u16x4(uint16x4_t v, uint16_t e) {
   return __riscv_pset_u16_u16x4(v, e, 2);
