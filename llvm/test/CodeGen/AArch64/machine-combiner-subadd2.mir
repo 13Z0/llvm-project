@@ -13,16 +13,6 @@
 
 name:            test1
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr32common }
-  - { id: 1, class: gpr32 }
-  - { id: 2, class: gpr32 }
-  - { id: 3, class: gpr32common }
-  - { id: 4, class: gpr32common }
-  - { id: 5, class: gpr32 }
-  - { id: 6, class: gpr32 }
-  - { id: 7, class: gpr32 }
-  - { id: 8, class: gpr32 }
 body:              |
   bb.0:
     %2:gpr32 = COPY $w2
@@ -47,16 +37,6 @@ body:              |
 
 name:            test2
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr64common }
-  - { id: 1, class: gpr64 }
-  - { id: 2, class: gpr64 }
-  - { id: 3, class: gpr64common }
-  - { id: 4, class: gpr64common }
-  - { id: 5, class: gpr64 }
-  - { id: 6, class: gpr64 }
-  - { id: 7, class: gpr64 }
-  - { id: 8, class: gpr64 }
 body:              |
   bb.0:
     %2:gpr64 = COPY $x2
@@ -81,16 +61,6 @@ body:              |
 
 name:           test3
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr32common }
-  - { id: 1, class: gpr32 }
-  - { id: 2, class: gpr32 }
-  - { id: 3, class: gpr32common }
-  - { id: 4, class: gpr32common }
-  - { id: 5, class: gpr32 }
-  - { id: 6, class: gpr32 }
-  - { id: 7, class: gpr32 }
-  - { id: 8, class: gpr32 }
 body:              |
   bb.0:
     %2:gpr32 = COPY $w2
@@ -115,16 +85,6 @@ body:              |
 
 name:            test4
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr64common }
-  - { id: 1, class: gpr64 }
-  - { id: 2, class: gpr64 }
-  - { id: 3, class: gpr64common }
-  - { id: 4, class: gpr64common }
-  - { id: 5, class: gpr64 }
-  - { id: 6, class: gpr64 }
-  - { id: 7, class: gpr64 }
-  - { id: 8, class: gpr64 }
 body:              |
   bb.0:
     %2:gpr64 = COPY $x2
@@ -149,16 +109,6 @@ body:              |
 
 name:            test5
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr32common }
-  - { id: 1, class: gpr32 }
-  - { id: 2, class: gpr32 }
-  - { id: 3, class: gpr32common }
-  - { id: 4, class: gpr32common }
-  - { id: 5, class: gpr32 }
-  - { id: 6, class: gpr32 }
-  - { id: 7, class: gpr32 }
-  - { id: 8, class: gpr32 }
 body:              |
   bb.0:
     %2:gpr32 = COPY $w2
@@ -183,16 +133,6 @@ body:              |
 
 name:            test6
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr64common }
-  - { id: 1, class: gpr64 }
-  - { id: 2, class: gpr64 }
-  - { id: 3, class: gpr64common }
-  - { id: 4, class: gpr64common }
-  - { id: 5, class: gpr64 }
-  - { id: 6, class: gpr64 }
-  - { id: 7, class: gpr64 }
-  - { id: 8, class: gpr64 }
 body:              |
   bb.0:
     %2:gpr64 = COPY $x2
@@ -217,17 +157,6 @@ body:              |
 
 name:            test7
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr32common }
-  - { id: 1, class: gpr32 }
-  - { id: 2, class: gpr32 }
-  - { id: 3, class: gpr32common }
-  - { id: 4, class: gpr32common }
-  - { id: 5, class: gpr32 }
-  - { id: 6, class: gpr32 }
-  - { id: 7, class: gpr32 }
-  - { id: 8, class: gpr32 }
-  - { id: 9, class: gpr32 }
 body:              |
   bb.0:
     %2:gpr32 = COPY $w2
@@ -248,18 +177,11 @@ body:              |
 # Drop nowrap flags in SUB
 
 # CHECK-LABEL: name: test8
-# CHECK:       [[SUBXrr:%[0-9]+]]:gpr64 = SUBXrr %1, %0
+# CHECK:       [[SUBXrr:%[0-9]+]]:gpr64 = SUBXrr %0, %1
 # CHECK-NEXT:  %4:gpr64common = SUBXrr [[SUBXrr]], %2
 
 name:            test8
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr64 }
-  - { id: 1, class: gpr64 }
-  - { id: 2, class: gpr64common }
-  - { id: 3, class: gpr64 }
-  - { id: 4, class: gpr64common }
-  - { id: 5, class: gpr64 }
 body:              |
   bb.0:
     %1:gpr64 = COPY $x1
@@ -281,16 +203,6 @@ body:              |
 
 name:            wzr
 tracksRegLiveness: false
-registers:
-  - { id: 0, class: gpr32common }
-  - { id: 1, class: gpr32 }
-  - { id: 2, class: gpr32 }
-  - { id: 3, class: gpr32common }
-  - { id: 4, class: gpr32common }
-  - { id: 5, class: gpr32 }
-  - { id: 6, class: gpr32 }
-  - { id: 7, class: gpr32 }
-  - { id: 8, class: gpr32 }
 body:              |
   bb.0:
     %2:gpr32 = COPY $w2
