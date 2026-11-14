@@ -9,7 +9,8 @@ load("@rules_python//python:defs.bzl", "py_binary")
 load(
     ":libc_build_rules.bzl",
     "libc_common_copts",
-    "libc_generated_header",
+    "libc_generated_headers",
+    "libc_hdrgen_spec",
     "libc_header_info",
     "libc_header_library",
     "libc_support_library",
@@ -152,7 +153,7 @@ py_binary(
     deps = ["@pyyaml//:yaml"],
 )
 
-LLVM_LIBC_HEADERS = [
+LLVM_LIBC_GENERATED_HEADERS = [
     libc_header_info(
         "assert",
         has_def_template = True,
@@ -264,14 +265,24 @@ LLVM_LIBC_HEADERS = [
 ]
 
 [
-    libc_generated_header(
-        name = info.target_name,
-        hdr = info.staging_path,
+    libc_hdrgen_spec(
+        name = info.spec_name,
+        def_template = info.def_template,
+        install_path = info.install_path,
         other_srcs = info.other_srcs,
         proxy = info.proxy,
         yaml_template = info.yaml_template,
     )
-    for info in LLVM_LIBC_HEADERS
+    for info in LLVM_LIBC_GENERATED_HEADERS
+]
+
+[
+    libc_generated_headers(
+        name = info.target_name,
+        output_dir = "staging/include",
+        specs = [":" + info.spec_name],
+    )
+    for info in LLVM_LIBC_GENERATED_HEADERS
 ]
 
 # Static headers that need to be in staging/include
@@ -312,7 +323,7 @@ STATIC_AND_CONDITIONAL_HEADERS = STATIC_HEADERS + ["include/llvm-libc-macros/_LI
 
 cc_library(
     name = "public_headers",
-    hdrs = [header.target_name for header in LLVM_LIBC_HEADERS],
+    hdrs = [header.target_name for header in LLVM_LIBC_GENERATED_HEADERS],
     includes = ["staging/include"],
     textual_hdrs = ["staging/" + f for f in STATIC_AND_CONDITIONAL_HEADERS],
 )
