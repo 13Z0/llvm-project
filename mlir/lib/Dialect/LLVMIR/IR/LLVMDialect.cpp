@@ -14,6 +14,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialectDecl.h"
 
 #include "LLVMDialectBytecode.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlowDialectInterface.h"
 #include "mlir/Dialect/LLVMIR/LLVMConstantOps.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
@@ -30,7 +31,20 @@ using namespace mlir::LLVM;
 // LLVMDialect initialization, type parsing, and registration.
 //===----------------------------------------------------------------------===//
 
+namespace {
+struct LLVMSCFToControlFlowInterface : SCFToControlFlowDialectInterface {
+  using SCFToControlFlowDialectInterface::SCFToControlFlowDialectInterface;
+
+  bool shouldPropagateLoopAttribute(NamedAttribute attr) const override {
+    // Preserve the existing policy of forwarding LLVM-valued attributes,
+    // including loop annotations, during SCF-to-CF conversion.
+    return true;
+  }
+};
+} // namespace
+
 void LLVMDialect::initialize() {
+  addInterfaces<LLVMSCFToControlFlowInterface>();
   registerAttributes();
 
   // clang-format off

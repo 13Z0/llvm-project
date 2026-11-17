@@ -1165,6 +1165,7 @@ def LLVM_FreezeOp : LLVM_Op<"freeze", [Pure, SameOperandsAndResultType]> {
 let partition = LLVM_TerminatorPartition in {
 def LLVM_BrOp : LLVM_TerminatorOp<"br",
     [DeclareOpInterfaceMethods<BranchOpInterface>, Pure]> {
+  let hasCanonicalizeMethod = 1;
   let arguments = (ins
     Variadic<LLVM_Type>:$destOperands,
     OptionalAttr<LoopAnnotationAttr>:$loop_annotation
