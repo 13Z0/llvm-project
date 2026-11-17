@@ -4176,7 +4176,7 @@ libc_support_library(
 
 libc_support_library(
     name = "__support_fputil_polyeval",
-    hdrs = ["src/__support/FPUtil/PolyEval.h"],
+    hdrs = ["src/__support/FPUtil/polyeval.h"],
     deps = [
         ":__support_common",
         ":__support_cpp_type_traits",
