@@ -1625,13 +1625,15 @@ void clang::emitBackendOutput(CompilerInstance &CI, CodeGenOptions &CGOpts,
 
   // Verify the module's DataLayout against the one the target computes for the
   // module's ABI. This respects the target-abi module flag rather than assuming
-  // the DataLayout is a fixed property of the target options.
+  // the DataLayout is a fixed property of the target options. Compare the
+  // layouts, not their strings: a string that the bitcode reader upgraded can
+  // list the same specifications in a different order.
   if (AsmHelper.TM) {
-    std::string DLDesc = M->getDataLayout().getStringRepresentation();
     std::string TDesc = M->getTargetTriple().computeDataLayout(
         AsmHelper.TM->getTargetABIName(*M));
-    if (DLDesc != TDesc)
-      Diags.Report(diag::err_data_layout_mismatch) << DLDesc << TDesc;
+    if (M->getDataLayout() != DataLayout(TDesc))
+      Diags.Report(diag::err_data_layout_mismatch)
+          << M->getDataLayout().getStringRepresentation() << TDesc;
   }
 }
 
